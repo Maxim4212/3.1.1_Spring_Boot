@@ -1,15 +1,14 @@
 package org.example.dao;
 
+import org.example.exception.UserNotFoundException;
 import org.example.model.User;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 
-@Component
-@Transactional
+@Repository
 public class UserDaoImpl implements UserDAO {
 
     @PersistenceContext
@@ -22,7 +21,11 @@ public class UserDaoImpl implements UserDAO {
 
     @Override
     public User getUserById(long id) {
-        return entityManager.find(User.class, id);
+        User user = entityManager.find(User.class, id);
+        if (user == null) {
+            throw new UserNotFoundException("User with id " + id + " not found");
+        }
+        return user;
     }
 
     @Override
@@ -32,11 +35,19 @@ public class UserDaoImpl implements UserDAO {
 
     @Override
     public void removeUser(long id) {
-        entityManager.remove(getUserById(id));
+        User user = getUserById(id);
+        if (user == null) {
+            throw new UserNotFoundException("User with id " + id + " not found, cannot delete.");
+        }
+        entityManager.remove(user);
     }
 
     @Override
     public void updateUser(User user) {
+        User existingUser = getUserById(user.getId());
+        if (existingUser == null) {
+            throw new UserNotFoundException("User with id " + user.getId() + " not found, cannot update.");
+        }
         entityManager.merge(user);
     }
 }
